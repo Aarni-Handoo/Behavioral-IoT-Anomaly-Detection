@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Packet Logs</title>
+
+</head>
+
+<body>
+
+<h2>Latest Packet Logs</h2>
+
+<table border="1" cellpadding="8">
+
+<tr>
+
+<th>Time</th>
+<th>Device ID</th>
+<th>Protocol</th>
+<th>Packet Size</th>
+<th>Latency</th>
+<th>Jitter</th>
+
+</tr>
+
+{% for packet in packets %}
+
+<tr>
+
+<td>{{ packet.packet_timestamp }}</td>
+
+<td>{{ packet.device_id }}</td>
+
+<td>{{ packet.protocol }}</td>
+
+<td>{{ packet.packet_size }}</td>
+
+<td>{{ packet.latency }}</td>
+
+<td>{{ packet.jitter }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</body>
+
+</html>
