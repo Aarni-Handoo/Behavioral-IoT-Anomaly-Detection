@@ -82,3 +82,14 @@ def packets():
 def statistics():
 
     return get_packet_statistics()
+
+@main_bp.route("/learn")
+def learn():
+    from backend.services.learning_engine import learn_all_devices
+
+    learned = learn_all_devices()
+
+    return {
+        "message": "Behavioral learning completed",
+        "devices_learned": learned
+    }
