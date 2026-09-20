@@ -8,6 +8,7 @@ from backend.simulator.device_generator import SMART_HOME_DEVICES
 from backend.database import db
 from backend.models.device import Device
 from backend.models.packet_log import PacketLog
+from backend.services.anomaly_detector import detect_anomaly
 
 running = False
 
@@ -75,6 +76,19 @@ def device_worker(app, device):
 
                 db.session.add(packet_log)
                 db.session.commit()
+
+                if db_device.learning_status:
+                    result = detect_anomaly(
+                        db_device,
+                        packet["interval"]
+                    )
+
+                    if result["anomaly"]:
+                        print(
+                            f"ANOMALY DETECTED: "
+                            f"{db_device.device_name} | "
+                            f"Score: {result['score']}"
+                        )
 
             time.sleep(device["interval"])
 

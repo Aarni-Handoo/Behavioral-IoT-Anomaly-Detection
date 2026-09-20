@@ -16,6 +16,8 @@ def create_app():
 
     db.init_app(app)
 
+    from backend.models.anomaly_log import AnomalyLog
+
     from backend.routes.main_routes import main_bp
 
     app.register_blueprint(main_bp)

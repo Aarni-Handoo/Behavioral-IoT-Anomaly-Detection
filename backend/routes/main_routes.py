@@ -93,3 +93,69 @@ def learn():
         "message": "Behavioral learning completed",
         "devices_learned": learned
     }
+
+@main_bp.route("/test-anomaly/<int:device_id>/<float:interval>")
+def test_anomaly(device_id, interval):
+
+    from backend.services.anomaly_detector import detect_anomaly
+
+    device = Device.query.get(device_id)
+
+    if device is None:
+        return {
+            "error": "Device not found"
+        }, 404
+
+    result = detect_anomaly(device, interval)
+
+    return {
+        "device": device.device_name,
+        "observed_interval": interval,
+        **result
+    }
+
+@main_bp.route("/simulate-attack/<int:device_id>/<float:interval>")
+def simulate_attack_route(device_id, interval):
+
+    from backend.services.anomaly_detector import simulate_attack
+
+    device = Device.query.get(device_id)
+
+    if device is None:
+        return {
+            "error": "Device not found"
+        }, 404
+
+    result = simulate_attack(device, interval)
+
+    return {
+        "device": device.device_name,
+        "observed_interval": interval,
+        **result
+    }
+
+@main_bp.route("/anomalies")
+def anomalies():
+
+    from backend.models.anomaly_log import AnomalyLog
+
+    all_anomalies = (
+        AnomalyLog.query
+        .order_by(AnomalyLog.detected_at.desc())
+        .all()
+    )
+
+    return {
+        "total_anomalies": len(all_anomalies),
+        "anomalies": [
+            {
+                "anomaly_id": anomaly.anomaly_id,
+                "device_id": anomaly.device_id,
+                "observed_interval": anomaly.observed_interval,
+                "anomaly_score": anomaly.anomaly_score,
+                "reason": anomaly.reason,
+                "detected_at": anomaly.detected_at.isoformat()
+            }
+            for anomaly in all_anomalies
+        ]
+    }
