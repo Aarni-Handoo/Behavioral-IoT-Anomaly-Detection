@@ -64,9 +64,32 @@ def detect_anomaly(device, observed_interval):
         "reason": reason
     }
 
-def simulate_attack(device, abnormal_interval):
+
+def simulate_attack(device, abnormal_interval=None):
     """
-    Simulate abnormal traffic from a device.
+    Simulate abnormal traffic using an interval outside
+    the device's learned normal behavior.
     """
 
-    return detect_anomaly(device, abnormal_interval)
+    if not device.learning_status:
+        return {
+            "anomaly": False,
+            "score": 0,
+            "reason": "Device has not completed learning yet."
+        }
+
+    mean_interval = device.mean_interval or 0
+    std_interval = device.std_interval or 0.01
+
+    # Generate an interval at least 5 standard deviations
+    # above the learned mean.
+    simulated_interval = mean_interval + (5 * max(std_interval, 0.01))
+
+    result = detect_anomaly(device, simulated_interval)
+
+    return {
+        **result,
+        "attack_simulated": True,
+        "simulated_interval": round(simulated_interval, 4),
+        "message": "Simulated abnormal traffic and evaluated it using the anomaly detector."
+    }

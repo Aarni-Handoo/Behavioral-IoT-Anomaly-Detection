@@ -1,20 +1,155 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <title>Behavioral IoT Detection</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Security Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
-
 <body>
+    <header class="topbar">
+        <div>
+            <h1>IoT Security Monitor</h1>
+            <p>Behavioral Anomaly Detection System</p>
+        </div>
+        <span class="status"><span class="dot"></span> Monitoring Dashboard</span>
+    </header>
 
-    <h1>Behavioral Anomaly Detection System</h1>
+    <nav class="nav">
+        <a class="active" href="/">Dashboard</a>
+        <a href="/devices">Devices</a>
+        <a href="/packets">Packet Logs</a>
+        <a href="/anomalies">Anomaly History</a>
+        <a href="/register">Register Device</a>
+    </nav>
 
-    <p>Phase 1 Completed Successfully</p>
+    <main class="container">
+        <h2>System Overview</h2>
+        <p class="muted">Summary of registered devices and detected network activity.</p>
 
+        <section class="cards">
+            <div class="card">
+                <p>Registered Devices</p>
+                <h2>{{ total_devices }}</h2>
+                <span>Devices in database</span>
+            </div>
+            <div class="card">
+                <p>Total Packets</p>
+                <h2>{{ total_packets }}</h2>
+                <span>Recorded packet logs</span>
+            </div>
+            <div class="card">
+                <p>Detected Anomalies</p>
+                <h2 class="danger-text">{{ total_anomalies }}</h2>
+                <span>Events in anomaly history</span>
+            </div>
+            <div class="card">
+                <p>Average Trust Score</p>
+                <h2>
+                    {% if devices %}
+                        {{ "%.1f"|format(devices|sum(attribute='trust_score') / devices|length) }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </h2>
+                <span>Out of 100</span>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-heading">
+                <h2>Device Trust Status</h2>
+                <a href="/devices">View all devices →</a>
+            </div>
+            {% if devices %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Device</th><th>Type</th><th>IP Address</th><th>Trust Score</th><th>Learning</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for device in devices %}
+                        <tr>
+                            <td>{{ device.device_name }}</td>
+                            <td>{{ device.device_type }}</td>
+                            <td>{{ device.ip_address }}</td>
+                            <td>
+                                <span class="trust
+                                    {% if device.trust_score is not none and device.trust_score < 50 %}low
+                                    {% elif device.trust_score is not none and device.trust_score < 80 %}medium
+                                    {% else %}high{% endif %}">
+                                    {{ device.trust_score if device.trust_score is not none else 'N/A' }}
+                                </span>
+                            </td>
+                            <td>{{ "Learned" if device.learning_status else "Pending" }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <p class="empty">No devices registered yet. Register a device to begin monitoring.</p>
+            {% endif %}
+        </section>
+
+        <section class="two-columns">
+            <div class="panel">
+                <div class="panel-heading">
+                    <h2>Recent Anomalies</h2>
+                    <a href="/anomalies">View history →</a>
+                </div>
+                {% if recent_anomalies %}
+                    {% for anomaly in recent_anomalies %}
+                    <div class="event">
+                        <span class="event-icon">!</span>
+                        <div>
+                            <strong>Device #{{ anomaly.device_id }}</strong>
+                            <p>{{ anomaly.reason or "Anomalous behavior detected" }}</p>
+                            <small>Score: {{ anomaly.anomaly_score }} · {{ anomaly.detected_at or "Time unavailable" }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="empty">No anomalies recorded yet.</p>
+                {% endif %}
+            </div>
+
+            <div class="panel">
+                <div class="panel-heading">
+                    <h2>Protocol Breakdown</h2>
+                    <a href="/packets">View packets →</a>
+                </div>
+                {% for protocol, count in [('TCP', stats.tcp), ('UDP', stats.udp), ('MQTT', stats.mqtt), ('HTTP', stats.http)] %}
+                <div class="protocol-row">
+                    <span>{{ protocol }}</span>
+                    <strong>{{ count }}</strong>
+                </div>
+                {% endfor %}
+                <div class="panel-heading packet-heading">
+                    <h2>Latest Packets</h2>
+                </div>
+                {% if recent_packets %}
+                    {% for packet in recent_packets %}
+                    <div class="packet-row">
+                        <span>Device #{{ packet.device_id }} · {{ packet.protocol or "Unknown" }}</span>
+                        <small>{{ packet.packet_timestamp or "Time unavailable" }}</small>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="empty">No packet logs available yet.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="panel actions">
+            <h2>System Actions</h2>
+            <p>Run the existing backend operations using these links.</p>
+            <a class="button" href="/learn">Run Behavioral Learning</a>
+            <a class="button secondary" href="/start-simulator">Start Simulator</a>
+            <a class="button secondary" href="/stop-simulator">Stop Simulator</a>
+        </section>
+    </main>
+    <footer>Behavioral IoT Anomaly Detection System · Phase 6</footer>
 </body>
-
 </html>

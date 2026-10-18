@@ -14,7 +14,40 @@ main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/")
 def home():
-    return render_template("index.html")
+    from backend.models.anomaly_log import AnomalyLog
+
+    devices = Device.query.order_by(Device.device_id.desc()).all()
+
+    total_devices = Device.query.count()
+    total_packets = PacketLog.query.count()
+    total_anomalies = AnomalyLog.query.count()
+
+    recent_anomalies = (
+        AnomalyLog.query
+        .order_by(AnomalyLog.detected_at.desc())
+        .limit(5)
+        .all()
+    )
+
+    recent_packets = (
+        PacketLog.query
+        .order_by(PacketLog.packet_timestamp.desc())
+        .limit(5)
+        .all()
+    )
+
+    stats = get_packet_statistics()
+
+    return render_template(
+        "index.html",
+        devices=devices,
+        total_devices=total_devices,
+        total_packets=total_packets,
+        total_anomalies=total_anomalies,
+        recent_anomalies=recent_anomalies,
+        recent_packets=recent_packets,
+        stats=stats
+    )
 
 
 @main_bp.route("/register", methods=["GET", "POST"])
