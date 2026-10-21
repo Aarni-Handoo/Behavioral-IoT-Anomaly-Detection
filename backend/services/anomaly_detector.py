@@ -27,7 +27,7 @@ def detect_anomaly(device, observed_interval):
     # Calculate deviation from normal behavior
     deviation = abs(observed_interval - mean_interval)
 
-    anomaly_score = deviation / std_interval
+    anomaly_score = round(deviation / std_interval, 10)
 
     # More than 3 standard deviations = suspicious
     is_anomaly = anomaly_score > 3
@@ -93,3 +93,4 @@ def simulate_attack(device, abnormal_interval=None):
         "simulated_interval": round(simulated_interval, 4),
         "message": "Simulated abnormal traffic and evaluated it using the anomaly detector."
     }
+
