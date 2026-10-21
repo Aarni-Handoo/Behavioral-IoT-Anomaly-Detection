@@ -192,3 +192,54 @@ def anomalies():
             for anomaly in all_anomalies
         ]
     }
+
+    
+@main_bp.route("/simulate-burst/<int:device_id>")
+def simulate_burst(device_id):
+    from backend.services.attack_simulator import simulate_burst_attack
+
+    device = Device.query.get(device_id)
+
+    if device is None:
+        return {"error": "Device not found"}, 404
+
+    result = simulate_burst_attack(device)
+
+    return {
+        "device": device.device_name,
+        **result
+    }
+
+
+@main_bp.route("/simulate-identity-mismatch/<int:device_id>")
+def simulate_identity_mismatch_route(device_id):
+    from backend.services.attack_simulator import simulate_identity_mismatch
+
+    device = Device.query.get(device_id)
+
+    if device is None:
+        return {"error": "Device not found"}, 404
+
+    result = simulate_identity_mismatch(device)
+
+    return {
+        "device": device.device_name,
+        **result
+    }
+
+
+@main_bp.route("/evaluate-security/<int:device_id>/<path:source_ip>")
+def evaluate_security(device_id, source_ip):
+    from backend.services.security_detector import evaluate_packet_security
+
+    device = Device.query.get(device_id)
+
+    if device is None:
+        return {"error": "Device not found"}, 404
+
+    result = evaluate_packet_security(device, source_ip)
+
+    return {
+        "device": device.device_name,
+        **result
+    }
