@@ -8,6 +8,13 @@ SMART_HOME_DEVICES = [
     },
 
     {
+        "name": "DemoSensor-01",
+        "type": "Temperature Sensor",
+        "ip": "192.168.1.200",
+        "interval": 5
+    },
+
+    {
         "name": "TempSensor-02",
         "type": "Temperature Sensor",
         "ip": "192.168.1.11",

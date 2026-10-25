@@ -1,13 +1,22 @@
+
 from datetime import datetime
 
 from backend.database import db
 from backend.models.anomaly_log import AnomalyLog
+from backend.services.adaptive_detector import classify_interval
 
 
-def detect_anomaly(device, observed_interval):
+def detect_anomaly(
+    device,
+    observed_interval,
+    observed_jitter=None,
+    baseline_jitter=None
+):
     """
-    Compare an observed packet interval with the device's
-    learned normal behavior and store anomalies.
+    Evaluate an IoT device using the tuned Goal B detector.
+
+    If jitter data is unavailable, fall back to fixed Z-score.
+    Write one anomaly record and deduct trust only when flagged.
     """
 
     if not device.learning_status:
@@ -17,58 +26,76 @@ def detect_anomaly(device, observed_interval):
             "reason": "Device has not completed learning yet."
         }
 
-    mean_interval = device.mean_interval
-    std_interval = device.std_interval
-
-    # Avoid division by zero
-    if std_interval == 0:
-        std_interval = 0.01
-
-    # Calculate deviation from normal behavior
-    deviation = abs(observed_interval - mean_interval)
-
-    anomaly_score = round(deviation / std_interval, 10)
-
-    # More than 3 standard deviations = suspicious
-    is_anomaly = anomaly_score > 3
-
-    reason = (
-        "Interval is significantly different from normal behavior."
-        if is_anomaly
-        else "Behavior is within the learned normal range."
+    result = classify_interval(
+        mean_interval=device.mean_interval,
+        std_interval=device.std_interval,
+        observed_interval=observed_interval,
+        observed_jitter=observed_jitter,
+        baseline_jitter=baseline_jitter
     )
 
-    # Store anomaly in database
+    if not result["ready"]:
+        return {
+            "anomaly": False,
+            "score": 0,
+            "reason": result["reason"]
+        }
+
+    is_anomaly = result["anomaly"]
+    adaptive_active = result["jitter_ratio"] is not None
+
+    if is_anomaly:
+        reason = (
+            "Observed interval exceeded the adaptive behavioral threshold."
+            if adaptive_active
+            else "Observed interval exceeded the fixed behavioral threshold."
+        )
+    else:
+        reason = "Behavior is within the learned threshold."
+
     if is_anomaly:
         anomaly_log = AnomalyLog(
             device_id=device.device_id,
             observed_interval=observed_interval,
-            anomaly_score=round(anomaly_score, 2),
+            anomaly_score=result["score"],
             reason=reason,
             detected_at=datetime.now()
         )
 
-        db.session.add(anomaly_log)
+        try:
+            db.session.add(anomaly_log)
 
-         # Reduce trust when suspicious behavior is detected
-        device.trust_score = max(
-            0,
-            device.trust_score - 10
-        )
+            current_trust = (
+                device.trust_score
+                if device.trust_score is not None
+                else 100
+            )
 
-        db.session.commit()
+            device.trust_score = max(0, current_trust - 10)
+
+            db.session.commit()
+
+        except Exception:
+            db.session.rollback()
+            raise
 
     return {
         "anomaly": is_anomaly,
-        "score": round(anomaly_score, 2),
-        "reason": reason
+        "score": result["score"],
+        "reason": reason,
+        "fixed_anomaly": result["fixed_anomaly"],
+        "fixed_threshold": result["fixed_threshold"],
+        "adaptive_threshold": result["adaptive_threshold"],
+        "jitter_ratio": result["jitter_ratio"],
+        "adaptive_active": adaptive_active
     }
 
 
 def simulate_attack(device, abnormal_interval=None):
     """
-    Simulate abnormal traffic using an interval outside
-    the device's learned normal behavior.
+    Simulate an abnormal interval and use the detector.
+
+    Without jitter parameters, the fixed Z-score fallback applies.
     """
 
     if not device.learning_status:
@@ -81,9 +108,11 @@ def simulate_attack(device, abnormal_interval=None):
     mean_interval = device.mean_interval or 0
     std_interval = device.std_interval or 0.01
 
-    # Generate an interval at least 5 standard deviations
-    # above the learned mean.
-    simulated_interval = mean_interval + (5 * max(std_interval, 0.01))
+    simulated_interval = (
+        mean_interval + 5 * max(std_interval, 0.01)
+        if abnormal_interval is None
+        else abnormal_interval
+    )
 
     result = detect_anomaly(device, simulated_interval)
 
@@ -91,6 +120,8 @@ def simulate_attack(device, abnormal_interval=None):
         **result,
         "attack_simulated": True,
         "simulated_interval": round(simulated_interval, 4),
-        "message": "Simulated abnormal traffic and evaluated it using the anomaly detector."
+        "message": (
+            "Simulated abnormal traffic and evaluated it "
+            "using the behavioral detector."
+        )
     }
-

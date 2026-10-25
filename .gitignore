@@ -36,3 +36,12 @@ build/
 # Coverage
 .coverage
 htmlcov/
+# Local config and backups
+.env.*
+!.env.example
+*backup*.sql
+
+# Local config and backups
+.env.*
+!.env.example
+*backup*.sql
