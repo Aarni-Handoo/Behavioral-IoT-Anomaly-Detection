@@ -5,10 +5,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IoT Security Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 </head>
 <body>
     <header class="topbar">
+        
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-container">
+        {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">
+            {{ message }}
+            </div>
+        {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
         <div>
             <h1>IoT Security Monitor</h1>
             <p>Behavioral Anomaly Detection System</p>
@@ -19,13 +32,14 @@
     <nav class="nav">
         <a class="active" href="/">Dashboard</a>
         <a href="/devices">Devices</a>
+        <a href="/adaptive-lab">Adaptive Lab</a>
         <a href="/packets">Packet Logs</a>
         <a href="/anomalies">Anomaly History</a>
         <a href="/register">Register Device</a>
     </nav>
 
     <main class="container">
-        <h2>System Overview</h2>
+        <section class="hero-intro"><div><p class="eyebrow">NETWORK INTELLIGENCE · LIVE OVERVIEW</p><h2>System Overview</h2><p class="muted">Device behaviour, network activity and anomaly monitoring in one place.</p></div><a class="button" href="/adaptive-lab">Explore Adaptive Detection →</a></section>
         <p class="muted">Summary of registered devices and detected network activity.</p>
 
         <section class="cards">
@@ -144,12 +158,12 @@
 
         <section class="panel actions">
             <h2>System Actions</h2>
-            <p>Run the existing backend operations using these links.</p>
+            <p>Existing simulation controls. Learning and simulation may change database records.</p>
             <a class="button" href="/learn">Run Behavioral Learning</a>
             <a class="button secondary" href="/start-simulator">Start Simulator</a>
             <a class="button secondary" href="/stop-simulator">Stop Simulator</a>
         </section>
     </main>
-    <footer>Behavioral IoT Anomaly Detection System · Phase 6</footer>
+    <footer>Behavioral IoT Anomaly Detection System · Security Command Center</footer>
 </body>
 </html>
